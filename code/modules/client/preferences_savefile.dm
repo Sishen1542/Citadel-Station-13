@@ -5,7 +5,7 @@
 //	You do not need to raise this if you are adding new values that have sane defaults.
 //	Only raise this value when changing the meaning/format/name/layout of an existing value
 //	where you would want the updater procs below to run
-#define SAVEFILE_VERSION_MAX	33
+#define SAVEFILE_VERSION_MAX	36
 
 /*
 SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Carn
@@ -200,6 +200,14 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		features["silicon_flavor_text"] = html_encode(features["silicon_flavor_text"])
 		features["ooc_notes"] = html_encode(features["ooc_notes"])
 
+	if(current_version < 35)
+		if(S["species"] == "lizard")
+			features["mam_snouts"] = features["snout"]
+
+	if(current_version < 36)
+		left_eye_color = S["eye_color"]
+		right_eye_color = S["eye_color"]
+
 /datum/preferences/proc/load_path(ckey,filename="preferences.sav")
 	if(!ckey)
 		return
@@ -224,7 +232,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	var/needs_update = savefile_needs_update(S)
 	if(needs_update == -2)		//fatal, can't load any data
 		return 0
-	
+
 	. = TRUE
 
 	//general preferences
@@ -443,7 +451,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 		return 0
 
 	. = TRUE
-	
+
 	//Species
 	var/species_id
 	S["species"]			>> species_id
@@ -472,7 +480,8 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	S["age"]					>> age
 	S["hair_color"]				>> hair_color
 	S["facial_hair_color"]		>> facial_hair_color
-	S["eye_color"]				>> eye_color
+	S["left_eye_color"]			>> left_eye_color
+	S["right_eye_color"]		>> left_eye_color
 	S["use_custom_skin_tone"]	>> use_custom_skin_tone
 	S["skin_tone"]				>> skin_tone
 	S["hair_style_name"]		>> hair_style
@@ -510,7 +519,14 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	S["scars3"]							>> scars_list["3"]
 	S["scars4"]							>> scars_list["4"]
 	S["scars5"]							>> scars_list["5"]
-
+	var/limbmodstr
+	S["modified_limbs"] >> limbmodstr
+	if(length(limbmodstr))
+		modified_limbs = safe_json_decode(limbmodstr)
+	else
+		modified_limbs = list()
+	S["chosen_limb_id"]					>> chosen_limb_id
+	S["hide_ckey"]						>> hide_ckey //saved per-character
 
 	//Custom names
 	for(var/custom_name_id in GLOB.preferences_custom_names)
@@ -643,7 +659,8 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	age								= sanitize_integer(age, AGE_MIN, AGE_MAX, initial(age))
 	hair_color						= sanitize_hexcolor(hair_color, 6, FALSE)
 	facial_hair_color				= sanitize_hexcolor(facial_hair_color, 6, FALSE)
-	eye_color						= sanitize_hexcolor(eye_color, 6, FALSE)
+	left_eye_color					= sanitize_hexcolor(left_eye_color, 6, FALSE)
+	right_eye_color					= sanitize_hexcolor(right_eye_color, 6, FALSE)
 
 	var/static/allow_custom_skintones
 	if(isnull(allow_custom_skintones))
@@ -772,7 +789,8 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["age"]						, age)
 	WRITE_FILE(S["hair_color"]				, hair_color)
 	WRITE_FILE(S["facial_hair_color"]		, facial_hair_color)
-	WRITE_FILE(S["eye_color"]				, eye_color)
+	WRITE_FILE(S["left_eye_color"]			, left_eye_color)
+	WRITE_FILE(S["right_eye_color"]			, right_eye_color)
 	WRITE_FILE(S["use_custom_skin_tone"]	, use_custom_skin_tone)
 	WRITE_FILE(S["skin_tone"]				, skin_tone)
 	WRITE_FILE(S["hair_style_name"]			, hair_style)
@@ -852,6 +870,7 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["joblessrole"]		, joblessrole)
 	//Write prefs
 	WRITE_FILE(S["job_preferences"] , job_preferences)
+	WRITE_FILE(S["hide_ckey"]		, hide_ckey)
 
 	//Quirks
 	WRITE_FILE(S["all_quirks"]			, all_quirks)
@@ -866,6 +885,10 @@ SAVEFILE UPDATING/VERSIONING - 'Simplified', or rather, more coder-friendly ~Car
 	WRITE_FILE(S["scars3"]						, scars_list["3"])
 	WRITE_FILE(S["scars4"]						, scars_list["4"])
 	WRITE_FILE(S["scars5"]						, scars_list["5"])
+	if(islist(modified_limbs))
+		WRITE_FILE(S["modified_limbs"]				, safe_json_encode(modified_limbs))
+	WRITE_FILE(S["chosen_limb_id"],   chosen_limb_id)
+
 
 	//gear loadout
 	if(chosen_gear.len)

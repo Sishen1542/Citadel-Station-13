@@ -8,7 +8,7 @@
 /obj/item/gun/ballistic/revolver/Initialize()
 	. = ..()
 	if(!istype(magazine, /obj/item/ammo_box/magazine/internal/cylinder))
-		verbs -= /obj/item/gun/ballistic/revolver/verb/spin
+		verbs += /obj/item/gun/ballistic/revolver/verb/spin
 
 /obj/item/gun/ballistic/revolver/chamber_round(spin = 1)
 	if(spin)
@@ -83,6 +83,11 @@
 /obj/item/gun/ballistic/revolver/examine(mob/user)
 	. = ..()
 	. += "[get_ammo(0,0)] of those are live rounds."
+
+/obj/item/gun/ballistic/revolver/syndicate
+	unique_reskin = list("Default" = "revolver",
+						"Silver" = "russianrevolver",
+						"Robust" = "revolvercit")
 
 /obj/item/gun/ballistic/revolver/detective
 	name = "\improper .38 Mars Special"
@@ -343,10 +348,10 @@
 		else
 			to_chat(user, "<span class='warning'>You need at least ten lengths of cable if you want to make a sling!</span>")
 
-/obj/item/gun/ballistic/revolver/doublebarrel/improvised/update_icon()
-	..()
+/obj/item/gun/ballistic/revolver/doublebarrel/improvised/update_overlays()
+	. = ..()
 	if(slung)
-		icon_state += "sling"
+		. += "[icon_state]sling"
 
 /obj/item/gun/ballistic/revolver/doublebarrel/improvised/sawoff(mob/user)
 	. = ..()
